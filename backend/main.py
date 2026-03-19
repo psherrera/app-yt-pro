@@ -455,14 +455,9 @@ async def proxy_thumbnail(url: str):
 
 # --- SERVIDO DE FRONTEND ---
 if os.path.exists(FRONTEND_DIR):
-    app.mount("/frontend", StaticFiles(directory=FRONTEND_DIR), name="frontend")
-    
-    @app.get("/")
-    async def serve_index():
-        index_path = os.path.join(FRONTEND_DIR, 'index.html')
-        if os.path.exists(index_path):
-            return FileResponse(index_path)
-        return {"error": "Frontend no encontrado"}
+    # Montamos la carpeta frontend en la raíz para que index.html encuentre style.css, main.js, etc.
+    # html=True permite que '/' sirva automáticamente 'index.html'
+    app.mount("/", StaticFiles(directory=FRONTEND_DIR, html=True), name="frontend")
 else:
     print(f"ADVERTENCIA: No se encontró la carpeta frontend en {FRONTEND_DIR}")
 
