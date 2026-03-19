@@ -170,9 +170,10 @@ async def get_video_info(req: VideoRequest, request: Request):
             print(f"DEBUG: Cargando cookies locales desde {cookie_path}")
             opts['cookiefile'] = cookie_path
         
-        # Estrategia de clientes para YouTube
+        # Estrategia de clientes para YouTube (Priorizamos móviles para saltar bloqueos)
         if 'youtube.com' in target_url or 'youtu.be' in target_url:
-            opts['extractor_args'] = {'youtube': {'player_client': ['android', 'ios', 'tv']}}
+            opts['extractor_args'] = {'youtube': {'player_client': ['ios', 'android', 'web']}}
+            opts['user_agent'] = 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_3_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.3.1 Mobile/15E148 Safari/604.1'
         return opts
 
     info = None
@@ -186,10 +187,12 @@ async def get_video_info(req: VideoRequest, request: Request):
     except Exception as e:
         last_error = str(e)
         print(f"Error en extracción primaria: {last_error}")
-        # Intento secundario con cliente web si falla
+        # Intento secundario con cliente alternativo si falla
         try:
             opts = get_robust_opts(url)
-            opts['extractor_args'] = {'youtube': {'player_client': ['web', 'tv']}}
+            # Forzamos cliente 'tv' o 'mweb' como última opción
+            if 'youtube.com' in url or 'youtu.be' in url:
+                opts['extractor_args'] = {'youtube': {'player_client': ['tv', 'mweb']}}
             with yt_dlp.YoutubeDL(opts) as ydl:
                 info = ydl.extract_info(url, download=False)
         except Exception as e2:
