@@ -1,0 +1,23 @@
+{
+  "name": "StreamVault Premium",
+  "short_name": "StreamVault",
+  "description": "Premium Video Downloader and Transcriber",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#0a0812",
+  "theme_color": "#895af6",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+        "src": "icon-512.png",
+        "sizes": "512x512",
+        "type": "image/png",
+        "purpose": "maskable"
+    }
+  ]
+}

@@ -1,0 +1,13 @@
+fastapi
+uvicorn
+yt-dlp
+openai-whisper
+torch
+numpy
+pydantic
+python-multipart
+requests
+groq
+deep-translator
+python-dotenv
+pydub

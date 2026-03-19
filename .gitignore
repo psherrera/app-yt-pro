@@ -1,0 +1,19 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# App specific
+backend/downloads/
+backend/model/
+backend/transcripts_cache.json
+backend/cookies.txt
+backend/NULL
+
+# Docker
+.docker/
+
+# OS
+.DS_Store
+Thumbs.db

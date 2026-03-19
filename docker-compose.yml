@@ -1,0 +1,28 @@
+version: '3.8'
+
+services:
+  backend:
+    build: ./backend
+    container_name: yt-pro-backend
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./backend/downloads:/app/downloads
+      - ./backend/model:/app/model
+      - ./backend:/app
+    environment:
+      - PYTHONUNBUFFERED=1
+      - GROQ_API_KEY=${GROQ_API_KEY}
+      - WHISPER_CACHE_DIR=/app/model
+    restart: unless-stopped
+
+  frontend:
+    image: nginx:alpine
+    container_name: yt-pro-frontend
+    ports:
+      - "80:80"
+    volumes:
+      - ./frontend:/usr/share/nginx/html
+    depends_on:
+      - backend
+    restart: unless-stopped
