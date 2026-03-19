@@ -99,6 +99,29 @@ document.addEventListener('DOMContentLoaded', () => {
         loginModal.classList.add('hidden');
     }
 
+    // --- Web Share Target Handler ---
+    const handleSharedContent = () => {
+        const params = new URLSearchParams(window.location.search);
+        const sharedUrl = params.get('url') || params.get('text') || params.get('title');
+        
+        if (sharedUrl) {
+            // Clean up the URL (sometimes apps share text + URL together)
+            const urlRegex = /(https?:\/\/[^\s]+)/g;
+            const found = sharedUrl.match(urlRegex);
+            const cleanUrl = found ? found[0] : sharedUrl;
+
+            if (cleanUrl.startsWith('http')) {
+                videoUrlInput.value = cleanUrl;
+                // Si ya está logueado, disparamos el análisis automáticamente
+                if (localStorage.getItem('app_logged_in') === 'true') {
+                    setTimeout(() => fetchBtn.click(), 500);
+                }
+            }
+        }
+    };
+
+    handleSharedContent();
+
     let currentMaxResThumbnail = '';
 
     // Fetch Video Info
