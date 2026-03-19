@@ -169,7 +169,11 @@ async def get_video_info(req: VideoRequest, request: Request):
             last_error = f"{last_error} | {str(e2)}"
 
     if not info:
-        raise HTTPException(status_code=500, detail=f"No se pudo obtener información: {last_error}")
+        print(f"DEBUG: EXTRACT_INFO FAILED for {url}. Last error: {last_error}")
+        raise HTTPException(
+            status_code=400, 
+            detail=f"No se pudo obtener información del video. Esto puede deberse a que el video es privado, está restringido o YouTube ha bloqueado la conexión temporalmente. Error: {last_error[:100]}..."
+        )
 
     # Procesar formatos
     formats = []

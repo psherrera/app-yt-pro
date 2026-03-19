@@ -132,11 +132,23 @@ document.addEventListener('DOMContentLoaded', () => {
                 body: JSON.stringify({ url })
             });
 
+            if (!response.ok) {
+                const errData = await response.json().catch(() => ({}));
+                const errMsg = errData.detail || errData.error || 'Error desconocido en el servidor';
+                alert(`Error: ${errMsg}`);
+                return;
+            }
+
             const data = await response.json();
 
             if (data.error) {
                 const cleanError = data.error.replace(/\u001b\[[0-9;]*m/g, '');
                 alert(cleanError);
+                return;
+            }
+
+            if (!data.formats || !Array.isArray(data.formats)) {
+                alert('No se encontraron formatos disponibles para este video.');
                 return;
             }
 
