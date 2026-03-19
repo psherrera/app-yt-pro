@@ -11,6 +11,7 @@ from typing import Optional, List
 from fastapi import FastAPI, Request, HTTPException, BackgroundTasks
 from fastapi.responses import JSONResponse, FileResponse
 from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
 from deep_translator import GoogleTranslator
 import whisper
 from fastapi import Response
