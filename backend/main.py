@@ -128,7 +128,10 @@ async def get_video_info(req: VideoRequest, request: Request):
     url = req.url
     is_youtube = 'youtube.com' in url or 'youtu.be' in url
     
-    # Pool de User-Agents modernos para rotación
+
+# --- UNIFIED ROBUST OPTIONS (COOKIES & CLIENTS) ---
+def get_robust_opts(target_url, extra={}):
+    """Genera opciones unificadas para yt-dlp con soporte para cookies locales y de entorno."""
     USER_AGENTS = [
         'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/122.0.0.0 Safari/537.36',
         'Mozilla/5.0 (Macintosh; Intel Mac OS X 14_3_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
@@ -136,50 +139,56 @@ async def get_video_info(req: VideoRequest, request: Request):
         'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36 Edg/121.0.0.0',
         'Mozilla/5.0 (iPhone; CPU iPhone OS 17_3_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.3.1 Mobile/15E148 Safari/604.1'
     ]
+    
+    cookie_path = os.path.join(BASE_DIR, 'cookies.txt')
+    opts = {
+        'quiet': True,
+        'no_warnings': True,
+        'cachedir': False,
+        'noplaylist': True,
+        'nocheckcertificate': True,
+        'ignoreerrors': True,
+        'user_agent': random.choice(USER_AGENTS),
+        **extra
+    }
 
-    # Opciones unificadas y robustas para evitar 403 Forbidden
-    def get_robust_opts(target_url, extra={}):
-        cookie_path = os.path.join(BASE_DIR, 'cookies.txt')
-        opts = {
-            'quiet': True,
-            'no_warnings': True,
-            'cachedir': False,
-            'noplaylist': True,
-            'nocheckcertificate': True,
-            'ignoreerrors': True,
-            'user_agent': random.choice(USER_AGENTS),
-            **extra
-        }
+    # Soporte para cookies vía Variable de Entorno (Prioridad en Render)
+    cookie_b64 = os.environ.get('COOKIES_B64')
+    if cookie_b64:
+        try:
+            # Decodificamos y guardamos en un archivo temporal
+            cookie_data = base64.b64decode(cookie_b64).decode()
+            temp_cookie = tempfile.NamedTemporaryFile(mode='w', suffix='.txt', delete=False)
+            temp_cookie.write(cookie_data)
+            temp_cookie.close()
+            opts['cookiefile'] = temp_cookie.name
+            print(f"DEBUG: Cargando cookies desde variable [COOKIES_B64] (Temp: {temp_cookie.name})")
+        except Exception as e:
+            print(f"DEBUG: Error cargando COOKIES_B64: {e}")
+    
+    # Si no hay COOKIES_B64, intentamos con el archivo cookies.txt local
+    if 'cookiefile' not in opts and os.path.exists(cookie_path):
+        print(f"DEBUG: Cargando cookies locales desde {cookie_path}")
+        opts['cookiefile'] = cookie_path
+    
+    # Estrategia de clientes para YouTube (Priorizamos móviles para saltar bloqueos)
+    if 'youtube.com' in target_url or 'youtu.be' in target_url:
+        opts['extractor_args'] = {'youtube': {'player_client': ['ios', 'android', 'web']}}
+        opts['user_agent'] = 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_3_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.3.1 Mobile/15E148 Safari/604.1'
+    
+    return opts
 
-        # Soporte para cookies vía Variable de Entorno (Prioridad)
-        cookie_b64 = os.environ.get('COOKIES_B64')
-        if cookie_b64:
-            try:
-                # Decodificamos y guardamos en un archivo temporal seguro
-                cookie_data = base64.b64decode(cookie_b64).decode()
-                temp_cookie = tempfile.NamedTemporaryFile(mode='w', suffix='.txt', delete=False)
-                temp_cookie.write(cookie_data)
-                temp_cookie.close()
-                opts['cookiefile'] = temp_cookie.name
-                print(f"DEBUG: Cargando cookies desde variable COOKIES_B64 (Temp: {temp_cookie.name})")
-            except Exception as e:
-                print(f"DEBUG: Error cargando COOKIES_B64: {e}")
-        
-        # Si no hay COOKIES_B64, intentamos con el archivo cookies.txt local
-        if 'cookiefile' not in opts and os.path.exists(cookie_path):
-            print(f"DEBUG: Cargando cookies locales desde {cookie_path}")
-            opts['cookiefile'] = cookie_path
-        
-        # Estrategia de clientes para YouTube (Priorizamos móviles para saltar bloqueos)
-        if 'youtube.com' in target_url or 'youtu.be' in target_url:
-            opts['extractor_args'] = {'youtube': {'player_client': ['ios', 'android', 'web']}}
-            opts['user_agent'] = 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_3_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.3.1 Mobile/15E148 Safari/604.1'
-        return opts
+# --- ENDPOINTS ---
 
+@app.post("/api/video-info")
+async def get_video_info(req: VideoRequest, request: Request):
+    url = req.url
+    is_youtube = 'youtube.com' in url or 'youtu.be' in url
+    
     info = None
     last_error = ""
     
-    # Intentos de extracción con opciones robustas
+    # Intentos de extracción con opciones unificadas
     try:
         opts = get_robust_opts(url)
         with yt_dlp.YoutubeDL(opts) as ydl:
@@ -256,30 +265,14 @@ async def get_transcript(req: VideoRequest):
 
     with tempfile.TemporaryDirectory() as tmpdir:
         try:
-            # 1. Intentar descargar subtítulos directos
-            def get_robust_opts(target_url, extra={}):
-                cookie_path = os.path.join(BASE_DIR, 'cookies.txt')
-                opts = {
+            if 'youtube.com' in url or 'youtu.be' in url:
+                ydl_opts_subs = get_robust_opts(url, {
                     'skip_download': True,
                     'writesubtitles': True,
                     'writeautomaticsub': True,
                     'subtitleslangs': ['es.*', 'en.*'],
                     'outtmpl': os.path.join(tmpdir, 'sub.%(ext)s'),
-                    'quiet': True,
-                    'noplaylist': True,
-                    'nocheckcertificate': True,
-                    'ignoreerrors': True,
-                    'user_agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36',
-                    **extra
-                }
-                if os.path.exists(cookie_path):
-                    opts['cookiefile'] = cookie_path
-                if 'youtube.com' in target_url or 'youtu.be' in target_url:
-                    opts['extractor_args'] = {'youtube': {'player_client': ['android', 'ios', 'tv']}}
-                return opts
-
-            if 'youtube.com' in url or 'youtu.be' in url:
-                ydl_opts_subs = get_robust_opts(url)
+                })
                 with yt_dlp.YoutubeDL(ydl_opts_subs) as ydl:
                     ydl.extract_info(url, download=True)
                     sub_file = None
@@ -319,29 +312,15 @@ async def get_transcript(req: VideoRequest):
         except Exception:
             # 2. Descargar audio y usar Whisper
             try:
-                def get_robust_opts(target_url, extra={}):
-                    cookie_path = os.path.join(BASE_DIR, 'cookies.txt')
-                    opts = {
-                        'format': 'bestaudio/best',
-                        'outtmpl': os.path.join(tmpdir, 'audio.%(ext)s'),
-                        'postprocessors': [{
-                            'key': 'FFmpegExtractAudio',
-                            'preferredcodec': 'mp3',
-                            'preferredquality': '64', 
-                        }],
-                        'quiet': True,
-                        'nocheckcertificate': True,
-                        'ignoreerrors': True,
-                        'user_agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36',
-                        **extra
-                    }
-                    if os.path.exists(cookie_path):
-                        opts['cookiefile'] = cookie_path
-                    if 'youtube.com' in target_url or 'youtu.be' in target_url:
-                        opts['extractor_args'] = {'youtube': {'player_client': ['android', 'ios', 'tv']}}
-                    return opts
-                
-                audio_opts = get_robust_opts(url)
+                audio_opts = get_robust_opts(url, {
+                    'format': 'bestaudio/best',
+                    'outtmpl': os.path.join(tmpdir, 'audio.%(ext)s'),
+                    'postprocessors': [{
+                        'key': 'FFmpegExtractAudio',
+                        'preferredcodec': 'mp3',
+                        'preferredquality': '64', 
+                    }]
+                })
                 with yt_dlp.YoutubeDL(audio_opts) as ydl:
                     ydl.download([url])
                     audio_file = None
@@ -427,28 +406,10 @@ async def download_video(req: VideoRequest, background_tasks: BackgroundTasks):
     uid = str(uuid.uuid4())
     output_template = os.path.join(DOWNLOAD_FOLDER, f'%(title)s_{uid}.%(ext)s')
     
-    def get_robust_opts(target_url, extra={}):
-        cookie_path = os.path.join(BASE_DIR, 'cookies.txt')
-        opts = {
-            'format': format_id,
-            'outtmpl': output_template,
-            'quiet': True,
-            'nocheckcertificate': True,
-            'ignoreerrors': True,
-            'no_warnings': True,
-            'user_agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36',
-            **extra
-        }
-        if os.path.exists(cookie_path):
-            print(f"DEBUG: Cargando cookies desde {cookie_path}")
-            opts['cookiefile'] = cookie_path
-        else:
-            print(f"DEBUG: No se encontró archivo de cookies en {cookie_path}")
-        if 'youtube.com' in target_url or 'youtu.be' in target_url:
-            opts['extractor_args'] = {'youtube': {'player_client': ['android', 'ios', 'tv']}}
-        return opts
-
-    opts = get_robust_opts(url)
+    opts = get_robust_opts(url, {
+        'format': format_id,
+        'outtmpl': output_template,
+    })
 
     try:
         with yt_dlp.YoutubeDL(opts) as ydl:
