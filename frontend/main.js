@@ -29,6 +29,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const loginBtn = document.getElementById('login-btn');
     const passwordInput = document.getElementById('app-password');
     const loginError = document.getElementById('login-error');
+    const clearUrlBtn = document.getElementById('clear-url-btn');
+    const statusDot = document.getElementById('status-dot');
+    const statusText = document.getElementById('status-text');
+    const pwaInstallBtn = document.getElementById('pwa-install-btn');
 
     // Navigation Logic
     const navItems = document.querySelectorAll('.nav-item');
@@ -100,6 +104,74 @@ document.addEventListener('DOMContentLoaded', () => {
     if (localStorage.getItem('app_logged_in') === 'true') {
         loginModal.classList.add('hidden');
     }
+
+    // --- Server Status Monitor ---
+    const checkServerStatus = async () => {
+        try {
+            const response = await fetch(`${API_BASE}/health/cookies`);
+            if (response.ok) {
+                const data = await response.json();
+                if (data.status === 'ok') {
+                    statusDot.classList.replace('bg-slate-600', 'bg-emerald-500');
+                    statusDot.classList.remove('animate-pulse');
+                    statusText.textContent = 'Online';
+                    statusText.classList.replace('text-slate-500', 'text-emerald-500');
+                } else {
+                    statusDot.classList.replace('bg-slate-600', 'bg-amber-500');
+                    statusText.textContent = 'Issues';
+                    statusText.classList.replace('text-slate-500', 'text-amber-500');
+                }
+            }
+        } catch (error) {
+            statusDot.classList.replace('bg-slate-600', 'bg-red-500');
+            statusText.textContent = 'Offline';
+            statusText.classList.replace('text-slate-500', 'text-red-500');
+        }
+    };
+
+    checkServerStatus();
+    // Re-check every 60 seconds
+    setInterval(checkServerStatus, 60000);
+
+    // --- Clear URL Input Logic ---
+    videoUrlInput.addEventListener('input', () => {
+        if (videoUrlInput.value.trim().length > 0) {
+            clearUrlBtn.classList.remove('hidden');
+        } else {
+            clearUrlBtn.classList.add('hidden');
+        }
+    });
+
+    clearUrlBtn.addEventListener('click', () => {
+        videoUrlInput.value = '';
+        clearUrlBtn.classList.add('hidden');
+        videoUrlInput.focus();
+        // Also hide results if cleared
+        videoInfoCard.classList.add('hidden');
+    });
+
+    // --- PWA Installation Logic ---
+    let deferredPrompt;
+    window.addEventListener('beforeinstallprompt', (e) => {
+        e.preventDefault();
+        deferredPrompt = e;
+        pwaInstallBtn.classList.remove('hidden');
+    });
+
+    pwaInstallBtn.addEventListener('click', async () => {
+        if (!deferredPrompt) return;
+        deferredPrompt.prompt();
+        const { outcome } = await deferredPrompt.userChoice;
+        if (outcome === 'accepted') {
+            pwaInstallBtn.classList.add('hidden');
+        }
+        deferredPrompt = null;
+    });
+
+    window.addEventListener('appinstalled', () => {
+        pwaInstallBtn.classList.add('hidden');
+        deferredPrompt = null;
+    });
 
     // --- Web Share Target Handler ---
     const handleSharedContent = () => {

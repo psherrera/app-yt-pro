@@ -91,6 +91,17 @@
             <h1 class="text-xl font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white to-slate-400">StreamVault</h1>
         </div>
         <div class="flex items-center gap-4">
+            <!-- Server Status Badge -->
+            <div id="status-badge" class="flex items-center gap-2 px-3 py-1 bg-slate-800/50 border border-white/5 rounded-full transition-all">
+                <div id="status-dot" class="w-2 h-2 rounded-full bg-slate-600 animate-pulse"></div>
+                <span id="status-text" class="text-[10px] font-bold uppercase tracking-widest text-slate-500">Checking...</span>
+            </div>
+            
+            <!-- Install Button (Hidden by default) -->
+            <button id="pwa-install-btn" class="hidden bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all">
+                Instalar App
+            </button>
+
             <span id="quality-warning" class="hidden px-3 py-1 bg-amber-500/10 border border-amber-500/20 text-amber-500 text-xs rounded-full">
                 ⚠️ FFmpeg Warning
             </span>
@@ -116,6 +127,10 @@
                     <input type="text" id="video-url" 
                         class="w-full bg-transparent border-none focus:ring-0 py-4 text-slate-100 placeholder:text-slate-600" 
                         placeholder="Pega el enlace aquí..." autocomplete="off">
+                    <!-- Reset Button -->
+                    <button id="clear-url-btn" class="hidden hover:bg-white/10 p-1.5 rounded-lg transition-all text-slate-500 hover:text-white">
+                        <span class="material-symbols-outlined text-lg">close</span>
+                    </button>
                 </div>
                 <button id="fetch-info-btn" class="bg-accent hover:bg-accent/90 text-background-dark font-extrabold px-10 py-4 rounded-xl flex items-center justify-center gap-2 transition-transform active:scale-95 shadow-lg shadow-accent/20">
                     <span class="material-symbols-outlined">analytics</span>
