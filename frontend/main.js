@@ -106,31 +106,42 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // --- Server Status Monitor ---
+    const updateStatusUI = (status) => {
+        // Reset styles
+        statusDot.className = 'w-2 h-2 rounded-full';
+        statusText.className = 'text-xs font-medium';
+        
+        if (status === 'online') {
+            statusDot.classList.add('bg-emerald-500', 'shadow-[0_0_8px_rgba(16,185,129,0.5)]');
+            statusText.classList.add('text-emerald-500');
+            statusText.textContent = 'Online';
+        } else if (status === 'issues') {
+            statusDot.classList.add('bg-amber-500', 'animate-pulse');
+            statusText.classList.add('text-amber-500');
+            statusText.textContent = 'Cookie Issues';
+        } else {
+            statusDot.classList.add('bg-slate-600');
+            statusText.classList.add('text-slate-500');
+            statusText.textContent = 'Offline';
+        }
+    };
+
     const checkServerStatus = async () => {
         try {
             const response = await fetch(`${API_BASE}/health/cookies`);
             if (response.ok) {
                 const data = await response.json();
-                if (data.status === 'ok') {
-                    statusDot.classList.replace('bg-slate-600', 'bg-emerald-500');
-                    statusDot.classList.remove('animate-pulse');
-                    statusText.textContent = 'Online';
-                    statusText.classList.replace('text-slate-500', 'text-emerald-500');
-                } else {
-                    statusDot.classList.replace('bg-slate-600', 'bg-amber-500');
-                    statusText.textContent = 'Issues';
-                    statusText.classList.replace('text-slate-500', 'text-amber-500');
-                }
+                updateStatusUI(data.status === 'ok' ? 'online' : 'issues');
+            } else {
+                updateStatusUI('offline');
             }
         } catch (error) {
-            statusDot.classList.replace('bg-slate-600', 'bg-red-500');
-            statusText.textContent = 'Offline';
-            statusText.classList.replace('text-slate-500', 'text-red-500');
+            console.error("Status check failed:", error);
+            updateStatusUI('offline');
         }
     };
 
     checkServerStatus();
-    // Re-check every 60 seconds
     setInterval(checkServerStatus, 60000);
 
     // --- Clear URL Input Logic ---

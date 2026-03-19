@@ -1,9 +1,9 @@
-const CACHE_NAME = 'streamvault-v1.2';
+const CACHE_NAME = 'streamvault-v1.4';
 const ASSETS = [
   './',
   './index.html',
-  './style.css?v=1.2',
-  './main.js?v=1.2',
+  './style.css?v=1.4',
+  './main.js?v=1.4',
   './icon.svg'
 ];
 

@@ -18,7 +18,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link rel="apple-touch-icon" href="icon.svg">
     
-    <link rel="stylesheet" href="style.css?v=1.2">
+    <link rel="stylesheet" href="style.css?v=1.4">
     
     <script id="tailwind-config">
         tailwind.config = {
@@ -93,8 +93,8 @@
         <div class="flex items-center gap-4">
             <!-- Server Status Badge -->
             <div id="status-badge" class="flex items-center gap-2 px-3 py-1 bg-slate-800/50 border border-white/5 rounded-full transition-all">
-                <div id="status-dot" class="w-2 h-2 rounded-full bg-slate-600 animate-pulse"></div>
-                <span id="status-text" class="text-[10px] font-bold uppercase tracking-widest text-slate-500">Checking...</span>
+                <div id="status-dot" class="w-2 h-2 rounded-full bg-slate-600"></div>
+                <span id="status-text" class="text-xs font-medium text-slate-500">Offline</span>
             </div>
             
             <!-- Install Button (Hidden by default) -->
@@ -290,7 +290,7 @@
         &copy; 2026 StreamVault Digital Media Hub
     </footer>
 
-    <script src="main.js?v=1.2"></script>
+    <script src="main.js?v=1.4"></script>
     <script>
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
